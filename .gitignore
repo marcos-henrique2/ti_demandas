@@ -1,0 +1,10 @@
+# Ambiente Virtual
+venv/
+__pycache__/
+
+# Arquivos de banco de dados e chaves locais
+database.db
+secret.key
+
+# Arquivos do S.O.
+.DS_Store
