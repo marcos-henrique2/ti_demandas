@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2 class="mb-4">Gestão de Demandas</h2>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Adicionar Nova Demanda</h5>
+            <form method="POST" action="{{ url_for('gerenciar_demandas') }}">
+                <div class="form-row">
+                    <div class="form-group col-md-8">
+                        <label for="descricao">Descrição da Tarefa</label>
+                        <input type="text" class="form-control" name="descricao" required>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label for="prioridade">Prioridade</label>
+                        <select name="prioridade" class="form-control">
+                            {% for p in prioridades %}
+                            <option value="{{ p.name }}" {% if p.name == 'MEDIA' %}selected{% endif %}>{{ p.value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group col-md-2 align-self-end">
+                        <button type="submit" class="btn btn-primary btn-block">Adicionar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <h3>Demandas Ativas</h3>
+    <table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Descrição</th>
+            <th>Prioridade</th>
+            <th>Status</th>
+            <th>Criado Por</th> <th>Data</th>       <th class="text-center">Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for demanda in demandas %}
+        <tr>
+            <td>{{ demanda.id }}</td>
+            <td>{{ demanda.descricao }}</td>
+            <td> {% if demanda.prioridade.name == 'ALTA' %}<span class="badge badge-danger">{{ demanda.prioridade.value }}</span>{% elif demanda.prioridade.name == 'MEDIA' %}<span class="badge badge-primary">{{ demanda.prioridade.value }}</span>{% else %}<span class="badge badge-secondary">{{ demanda.prioridade.value }}</span>{% endif %}
+            </td>
+            <td> {% if demanda.status.name == 'A_FAZER' %} <span class="badge badge-warning">{{ demanda.status.value }}</span>{% elif demanda.status.name == 'EM_ANDAMENTO' %} <span class="badge badge-info">{{ demanda.status.value }}</span>{% elif demanda.status.name == 'CONCLUIDO' %} <span class="badge badge-success">{{ demanda.status.value }}</span>{% endif %}
+            </td>
+            <td>{{ demanda.criador.username }}</td>
+            <td>{{ demanda.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td class="text-center"> <form method="POST" action="{{ url_for('atualizar_status_demanda', id=demanda.id) }}" style="display: inline;"><input type="hidden" name="status" value="EM_ANDAMENTO"><button type="submit" class="btn btn-sm btn-info" {% if demanda.status.name != 'A_FAZER' %}disabled{% endif %}>Iniciar</button></form>
+                <form method="POST" action="{{ url_for('atualizar_status_demanda', id=demanda.id) }}" style="display: inline;"><input type="hidden" name="status" value="CONCLUIDO"><button type="submit" class="btn btn-sm btn-success" {% if demanda.status.name == 'CONCLUIDO' %}disabled{% endif %}>Concluir</button></form>
+                <a href="{{ url_for('editar_demanda', id=demanda.id) }}" class="btn btn-warning btn-sm ml-2">Editar</a>
+                <form method="POST" action="{{ url_for('apagar_demanda', id=demanda.id) }}" style="display: inline;"><button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja apagar esta demanda?')">Apagar</button></form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center">Nenhuma demanda cadastrada.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

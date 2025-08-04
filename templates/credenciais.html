@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2 class="mb-4">Gestão de Credenciais</h2>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Adicionar Nova Credencial</h5>
+            <form method="POST" action="{{ url_for('gerenciar_credenciais') }}">
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="servico">Serviço / Equipamento</label>
+                        <input type="text" class="form-control" name="servico" placeholder="Ex: Roteador Loja X" required>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="login">Login / Usuário</label>
+                        <input type="text" class="form-control" name="login">
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="senha">Senha</label>
+                        <input type="password" class="form-control" name="senha" required>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>&nbsp;</label>
+                        <button type="submit" class="btn btn-primary btn-block">Salvar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <h3>Credenciais Salvas</h3>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Serviço / Equipamento</th>
+            <th>Login</th>
+            <th class="text-center">Ações</th> </tr>
+    </thead>
+    <tbody>
+        {% for credencial in credenciais %}
+        <tr>
+            <td>{{ credencial.id }}</td>
+            <td>{{ credencial.servico }}</td>
+            <td>{{ credencial.login }}</td>
+            <td class="text-center">
+                <form method="POST" action="{{ url_for('visualizar_credencial', id=credencial.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-info btn-sm">Visualizar</button>
+                </form>
+
+                <form method="POST" action="{{ url_for('apagar_credencial', id=credencial.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                            onclick="return confirm('Tem certeza que deseja apagar esta credencial? Esta ação não pode ser desfeita.')">
+                        Apagar
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4" class="text-center">Nenhuma credencial cadastrada.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
