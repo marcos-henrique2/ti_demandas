@@ -1,4 +1,4 @@
-import os # Importamos o 'os' para ler variáveis de ambiente
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from cryptography.fernet import Fernet
@@ -7,45 +7,34 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 
-# --- Carregando a Chave de Criptografia (via Variável de Ambiente em produção) ---
-# O Render vai nos dar a chave através de uma variável de ambiente.
-# Se não encontrar, ele usa o arquivo local.
+# --- Carregando a Chave de Criptografia ---
 secret_key_str = os.environ.get('SECRET_KEY')
-if secret_key_str:
-    key = secret_key_str.encode('utf-8')
-else:
-    try:
-        with open('secret.key', 'rb') as key_file: key = key_file.read()
-    except FileNotFoundError:
-        raise RuntimeError("Arquivo 'secret.key' não encontrado e variável de ambiente SECRET_KEY não definida.")
-
+if not secret_key_str:
+    raise RuntimeError("Variável de ambiente SECRET_KEY não definida.")
+key = secret_key_str.encode('utf-8')
 fernet = Fernet(key)
 
 # --- Configuração ---
 app = Flask(__name__)
-# A secret key do Flask também virá de uma variável de ambiente
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'uma-chave-secreta-bem-dificil-local')
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'default-flask-secret-key')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # --- LÓGICA DO BANCO DE DADOS PARA DEPLOY ---
-# O Render nos dará a URL do banco de dados na variável de ambiente DATABASE_URL
 db_url = os.environ.get('DATABASE_URL')
-if db_url:
-    # Ajuste necessário para o SQLAlchemy entender a URL do Render/Heroku
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace("postgres://", "postgresql://", 1)
-else:
-    # Se a variável não existir, usa o SQLite local (para desenvolvimento)
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'database.db')
+if not db_url:
+    raise RuntimeError("Variável de ambiente DATABASE_URL não definida.")
+# Ajuste para o SQLAlchemy
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace("postgres://", "postgresql://", 1)
 
 db = SQLAlchemy(app)
-
 login_manager = LoginManager(); login_manager.init_app(app); login_manager.login_view = 'login'
 login_manager.login_message = "Por favor, faça o login para acessar esta página."
 login_manager.login_message_category = "warning"
 
-# --- Modelos do Banco de Dados (sem alterações) ---
-# ... (Cole aqui TODAS as suas classes de modelo: Usuario, Equipamento, Demanda, etc. sem nenhuma alteração) ...
+# --- Modelos e Rotas ---
+# ... COLE AQUI TODOS OS SEUS MODELOS E TODAS AS SUAS ROTAS ...
+# (O código dos modelos e das rotas não muda, é o mesmo da nossa última versão funcional)
+# ...
 class Usuario(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -66,9 +55,6 @@ class Demanda(db.Model):
     id = db.Column(db.Integer, primary_key=True); descricao = db.Column(db.String(250), nullable=False); status = db.Column(db.Enum(StatusDemanda), default=StatusDemanda.A_FAZER, nullable=False); prioridade = db.Column(db.Enum(PrioridadeDemanda), default=PrioridadeDemanda.MEDIA, nullable=False); data_criacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow); user_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
 class Credencial(db.Model):
     id = db.Column(db.Integer, primary_key=True); servico = db.Column(db.String(100), nullable=False); login = db.Column(db.String(100)); senha_criptografada = db.Column(db.String(255), nullable=False)
-
-# --- ROTAS DA APLICAÇÃO (sem alterações) ---
-# ... (Cole aqui TODAS as suas rotas: @app.route('/...')) ...
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated: return redirect(url_for('index'))
@@ -154,9 +140,3 @@ def visualizar_credencial(id):
 def apagar_credencial(id):
     credencial = Credencial.query.get_or_404(id); db.session.delete(credencial); db.session.commit()
     flash('Credencial apagada com sucesso!', 'success'); return redirect(url_for('gerenciar_credenciais'))
-
-# O bloco abaixo não é mais necessário para produção, pois o Gunicorn/Waitress cuidam da execução
-# if __name__ == '__main__':
-#     with app.app_context():
-#         db.create_all()
-#     app.run(debug=True)
